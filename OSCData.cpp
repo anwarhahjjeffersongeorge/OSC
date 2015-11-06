@@ -225,9 +225,9 @@ bool OSCData::getBoolean(){
 }
 
 int OSCData::getString(char * strBuffer, int length){
-    if (type == 's' && bytes <= length){
-        strncpy(strBuffer, data.s, bytes);
-        return bytes;
+    if (type == 's' && bytes >= length){
+        strncpy(strBuffer, data.s, length);
+        return length;
     } else {
     #ifndef ESP8266
         return NULL;
@@ -238,9 +238,11 @@ int OSCData::getString(char * strBuffer, int length){
 }
 
 int OSCData::getBlob(uint8_t * blobBuffer, int length){
-    if (type == 'b' && bytes <= length){
-        memcpy(blobBuffer, data.b, bytes);
-        return bytes;
+    //jump over the first 4 bytes which encode the length
+    int blobLength = bytes - 4;
+    if (type == 'b' && blobLength >= length){
+        memcpy(blobBuffer, data.b + 4, length);
+        return length;
     } else {
     #ifndef ESP8266
         return NULL;

@@ -81,7 +81,7 @@ OSCMessage::~OSCMessage(){
     free(incomingBuffer);
 }
 
-void OSCMessage::empty(){
+OSCMessage& OSCMessage::empty(){
     error = OSC_OK;
     //free each of hte data in the array
     for (int i = 0; i < dataCount; i++){
@@ -168,6 +168,7 @@ double OSCMessage::getDouble(int position){
         #endif
     }
 }
+
 bool  OSCMessage::getBoolean(int position){
 	OSCData * datum = getOSCData(position);
 	if (!hasError()){
@@ -337,7 +338,7 @@ int OSCMessage::getAddress(char * buffer, int offset, int len){
 	return strlen(buffer);
 }
 
-void OSCMessage::setAddress(const char * _address){
+OSCMessage& OSCMessage::setAddress(const char * _address){
     //free the previous address
     free(address); // are we sure address was allocated?
     //copy the address
@@ -349,6 +350,7 @@ void OSCMessage::setAddress(const char * _address){
 		strcpy(addressMemory, _address);
 		address = addressMemory;
 	}
+    return *this;
 }
 
 /*=============================================================================
@@ -418,10 +420,10 @@ OSCErrorCode OSCMessage::getError(){
     SENDING
  =============================================================================*/
 
-void OSCMessage::send(Print &p){
+OSCMessage& OSCMessage::send(Print &p){
     //don't send a message with errors
     if (hasError()){
-        return;
+        return *this;
     }
     uint8_t nullChar = '\0';
     //send the address
@@ -492,20 +494,23 @@ void OSCMessage::send(Print &p){
             p.write(ptr, datum->bytes);
         }
     }
+    return *this;
 }
 
 /*=============================================================================
     FILLING
  =============================================================================*/
 
-void OSCMessage::fill(uint8_t incomingByte){
+OSCMessage& OSCMessage::fill(uint8_t incomingByte){
     decode(incomingByte);
+    return *this;
 }
 
-void OSCMessage::fill(uint8_t * incomingBytes, int length){
+OSCMessage& OSCMessage::fill(uint8_t * incomingBytes, int length){
     while (length--){
         decode(*incomingBytes++);
     }
+    return *this;
 }
 
 /*=============================================================================
@@ -546,7 +551,7 @@ void OSCMessage::decodeData(uint8_t incomingByte){
                     break;
                 case 'f':
                     if (incomingBufferSize == 4){
-                        //parse the buffer as an int
+                        //parse the buffer as a float
                         union {
                             float f;
                             uint8_t b[4];
@@ -559,7 +564,7 @@ void OSCMessage::decodeData(uint8_t incomingByte){
                     break;
                 case 'd':
                     if (incomingBufferSize == 8){
-                        //parse the buffer as an int
+                        //parse the buffer as a double
                         union {
                             double d;
                             uint8_t b[8];
@@ -571,9 +576,8 @@ void OSCMessage::decodeData(uint8_t incomingByte){
                     }
                     break;
                 case 't':
-                    
                     if (incomingBufferSize == 8){
-                        //parse the buffer as an int
+                        //parse the buffer as a timetag
                         union {
                             osctime_t t;
                             uint8_t b[8];
@@ -676,7 +680,11 @@ void OSCMessage::decode(uint8_t incomingByte){
                     if (datum->error == OSC_OK){
                         //compute the padding size for the data
                         int dataPad = padSize(datum->bytes);
-                        if (incomingBufferSize == dataPad){
+                        //  if there is no padding required, switch back to DATA, and don't clear the incomingBuffer because it holds next data
+                        if (dataPad == 0){
+                             decodeState = DATA;
+                        }
+                        else if (incomingBufferSize == dataPad){
                             clearIncomingBuffer();
                             decodeState = DATA;
                         }
