@@ -27,6 +27,7 @@
 #define OSCMESSAGE_h
 
 #include "OSCData.h"
+#include <functional>
 #include <Print.h>
 
 
@@ -288,13 +289,19 @@ public:
 	//returns the number of characters matched in the address
 	int match( const char * pattern, int = 0);
 	
+	// define std function objects for callbacks to dispatch and route overloads
+	typedef std::function<void(OSCMessage&)> dispatchStdFunc;
+	typedef std::function<void(OSCMessage&, int)> routeStdFunc;
+	
 	//calls the function with the message as the arg if it was a full match
 	bool dispatch(const char * pattern, void (*callback)(OSCMessage &), int = 0);
-	
+	bool dispatch(const char * pattern, dispatchStdFunc callback, int = 0);
+
 	//like dispatch, but allows for partial matches
 	//the address match offset is sent as an argument to the callback
 	//also room for an option address offset to allow for multiple nested routes
 	bool route(const char * pattern, void (*callback)(OSCMessage &, int), int = 0);
+	bool route(const char * pattern, routeStdFunc callback, int = 0);
 	
 
 

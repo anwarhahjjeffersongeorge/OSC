@@ -307,21 +307,45 @@ bool OSCMessage::fullMatch( const char * pattern, int addr_offset){
 
 bool OSCMessage::dispatch(const char * pattern, void (*callback)(OSCMessage &), int addr_offset){
 	if (fullMatch(pattern, addr_offset)){
-		callback(*this);
+        callback(*this);
 		return true;
 	} else {
-		return false;
+        return false;
 	}
 }
 
+// overload dispatch to work with std::function
+bool OSCMessage::dispatch(const char * pattern, dispatchStdFunc callback, int  addr_offset){
+    if (fullMatch(pattern, addr_offset)){
+        callback(*this);
+        return true;
+    } else {
+        return false;
+    }   
+}
+
+
 bool OSCMessage::route(const char * pattern, void (*callback)(OSCMessage &, int), int initial_offset){
-	int match_offset = match(pattern, initial_offset);
+	Serial.print("OSCMessage::dispatch void *callback");
+    int match_offset = match(pattern, initial_offset);
 	if (match_offset>0){
 		callback(*this, match_offset + initial_offset);
 		return true;
 	} else {
 		return false;
 	}
+}
+
+//overload route to work with std::function
+bool OSCMessage::route(const char * pattern, routeStdFunc callback, int initial_offset){
+    int match_offset = match(pattern, initial_offset);
+    if (match_offset>0){
+        callback(*this, match_offset + initial_offset);
+        //callback();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /*=============================================================================
